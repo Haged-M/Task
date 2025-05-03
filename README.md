@@ -84,7 +84,18 @@ Open a browser and navigate to:
 
 Both should display their respective homepages and Redis connectivity status.
 
-### 4. Verify Redis
+### 4. Verify vhosts
+
+* Test vhosts using:
+
+  ```bash
+  curl tenant1.local
+  ```
+  ```bash
+  curl tenant2.local
+  ```
+
+### 5. Verify Redis
 
 * Test Redis using:
 
