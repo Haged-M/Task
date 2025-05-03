@@ -1,0 +1,134 @@
+---
+- name: Configure Apache with Virtual Hosts, MariaDB, and Redis
+  hosts: localhost
+  become: true
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - apache2
+          - php
+          - libapache2-mod-php
+          - mariadb-server
+          - php-mysql
+          - redis
+          - php-redis
+        state: present
+        update_cache: yes
+
+    - name: Create directories for websites
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      with_items:
+        - /var/www/tenant1
+        - /var/www/tenant2
+
+    - name: Create index.php for tenant1
+      copy:
+        dest: /var/www/tenant1/index.php
+        content: |
+          <?php
+          echo "<h1>Welcome to Tenant 1</h1>";
+          $redis = new Redis();
+          $redis->connect('127.0.0.1', 6379);
+          echo "<p>Redis Cache Test: " . $redis->ping() . "</p>";
+          ?>
+        mode: '0644'
+
+    - name: Create index.php for tenant2
+      copy:
+        dest: /var/www/tenant2/index.php
+        content: |
+          <?php
+          echo "<h1>Welcome to Tenant 2</h1>";
+          $redis = new Redis();
+          $redis->connect('127.0.0.1', 6379);
+          echo "<p>Redis Cache Test: " . $redis->ping() . "</p>";
+          ?>
+        mode: '0644'
+
+    - name: Create virtual host configuration for tenant1
+      copy:
+        dest: /etc/apache2/sites-available/tenant1.conf
+        content: |
+          <VirtualHost *:80>
+              ServerName tenant1.local
+              DocumentRoot /var/www/tenant1
+              <Directory /var/www/tenant1>
+                  AllowOverride All
+                  Require all granted
+              </Directory>
+          </VirtualHost>
+        mode: '0644'
+
+    - name: Create virtual host configuration for tenant2
+      copy:
+        dest: /etc/apache2/sites-available/tenant2.conf
+        content: |
+          <VirtualHost *:80>
+              ServerName tenant2.local
+              DocumentRoot /var/www/tenant2
+              <Directory /var/www/tenant2>
+                  AllowOverride All
+                  Require all granted
+              </Directory>
+          </VirtualHost>
+        mode: '0644'
+
+    - name: Enable tenant1 and tenant2 sites
+      command: a2ensite "{{ item }}"
+      with_items:
+        - tenant1.conf
+        - tenant2.conf
+      notify:
+        - Restart Apache
+
+    - name: Disable default site
+      command: a2dissite 000-default.conf
+      notify:
+        - Restart Apache
+
+    # - name: Ensure MariaDB is running
+    #   service:
+    #     name: mariadb
+    #     state: started
+    #     enabled: true
+
+    # - name: Create MariaDB database
+    #   mysql_db:
+    #     name: tenant_db
+    #     state: present
+
+    # - name: Create MariaDB user and grant privileges
+    #   mysql_user:
+    #     name: tenant_user
+    #     password: strong_password
+    #     priv: 'tenant_db.*:ALL'
+    #     host: localhost
+    #     state: present
+
+    - name: Ensure Redis is running
+      service:
+        name: redis-server
+        state: started
+        enabled: true
+
+    - name: Add entries to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        state: present
+        line: "{{ item }}"
+      with_items:
+        - "127.0.0.1 tenant1.local"
+        - "127.0.0.1 tenant2.local"
+      notify:
+        - Restart Apache
+
+  handlers:
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
+
