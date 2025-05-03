@@ -1,4 +1,4 @@
-![Screenshot 2025-05-03 084201](https://github.com/user-attachments/assets/edf821c3-87a3-46a8-a317-8c796509f135)# Ansible Playbook for Configuring Apache and Redis
+# Ansible Playbook for Configuring Apache and Redis
 
 ## Overview
 
@@ -93,7 +93,8 @@ Both should display their respective homepages and Redis connectivity status.
   ```
 
   Output should be `PONG`.
-![Uploading Screenshot 2025-[Uploading playbook.yml…]()05-03 084201.png…]()
+![Screenshot 2025-05-03 090457](https://github.com/user-attachments/assets/da6ceb07-0207-4e9e-b300-51d8fd270b60)
+
 
 ## Conclusion
 
